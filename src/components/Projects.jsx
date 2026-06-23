@@ -1,10 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
-import { motion, AnimatePresence, LayoutGroup } from 'framer-motion'
+import { useMemo, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useInView } from 'react-intersection-observer'
-import { Star, GitFork, ExternalLink, Clock, Search, Flame } from 'lucide-react'
+import { Star, GitFork, Clock, Search } from 'lucide-react'
 import { useGitHubRepos } from '../hooks/useGitHubRepos'
-import { SectionLabel } from './SectionLabel'
 
 const LANG_COLORS = {
   JavaScript: '#f7df1e',
@@ -35,226 +33,105 @@ function timeSince(dateStr) {
   return `${Math.floor(diff / 31536000)}y ago`
 }
 
-function spiritColor(lang) {
-  const map = {
-    TypeScript: ['rgba(125,211,252,', 'rgba(99,179,237,'],
-    JavaScript: ['rgba(251,191,36,', 'rgba(245,158,11,'],
-    Python: ['rgba(52,211,153,', 'rgba(16,185,129,'],
-    Rust: ['rgba(222,165,132,', 'rgba(194,120,80,'],
-    Go: ['rgba(0,173,216,', 'rgba(0,140,180,'],
-    CSS: ['rgba(167,139,250,', 'rgba(139,92,246,'],
-    HTML: ['rgba(251,113,133,', 'rgba(244,63,94,'],
-  }
-
-  return map[lang] || ['rgba(180,220,255,', 'rgba(147,197,253,']
-}
-
-function BeamPortal({ x, y, sc1, sc2 }) {
-  return createPortal(
-    <div
-      className="fixed pointer-events-none"
-      style={{ left: x, top: y, zIndex: 9999, transform: 'translateX(-50%)' }}
-    >
-      <motion.div
-        className="absolute"
-        style={{
-          borderRadius: '50%',
-          background: `radial-gradient(circle, ${sc1}0.6), transparent 70%)`,
-          left: '50%',
-          top: 0,
-        }}
-        initial={{ width: 0, height: 0, x: 0, y: 0, opacity: 0.9 }}
-        animate={{ width: 100, height: 100, x: -50, y: -50, opacity: 0 }}
-        transition={{ duration: 0.65, ease: 'easeOut' }}
-      />
-      <motion.div
-        style={{
-          position: 'absolute',
-          left: '50%',
-          bottom: 0,
-          transform: 'translateX(-50%)',
-          width: 5,
-          height: 180,
-          borderRadius: 3,
-          transformOrigin: 'bottom center',
-          background: `linear-gradient(to top, ${sc1}1), ${sc1}0.65), ${sc2}0.2), transparent)`,
-          boxShadow: `0 0 18px 6px ${sc1}0.3)`,
-        }}
-        initial={{ scaleY: 0, opacity: 1 }}
-        animate={{ scaleY: 16, opacity: 0 }}
-        transition={{ duration: 1, ease: [0.06, 0.88, 0.22, 1] }}
-      />
-    </div>,
-    document.body
+function formatCount(value) {
+  return new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(
+    value
   )
 }
 
-function RepoCard({ repo, index, onRegister, onUnregister }) {
-  const [awakened, setAwakened] = useState(false)
-  const [beamOrigin, setBeamOrigin] = useState(null)
-  const cardRef = useRef(null)
-  const awakenedRef = useRef(false)
+function RepoCard({ repo, index }) {
   const color = LANG_COLORS[repo.language] || '#94a3b8'
-  const [sc1, sc2] = spiritColor(repo.language)
-
-  function spawnBeam() {
-    if (awakenedRef.current) return
-    awakenedRef.current = true
-
-    if (cardRef.current) {
-      const rect = cardRef.current.getBoundingClientRect()
-      setBeamOrigin({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 })
-    }
-
-    setTimeout(() => {
-      setBeamOrigin(null)
-      setAwakened(true)
-    }, 950)
-  }
-
-  const spawnRef = useRef(spawnBeam)
-  spawnRef.current = spawnBeam
-
-  useEffect(() => {
-    onRegister?.(() => spawnRef.current())
-    return () => onUnregister?.()
-  }, [onRegister, onUnregister])
-
-  function touch() {
-    if (awakened || beamOrigin) return
-    spawnBeam()
-  }
+  const author = repo.owner?.login
 
   return (
-    <motion.div
-      ref={cardRef}
+    <motion.article
       layout
-      initial={{ opacity: 0, y: 24 }}
+      initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 12 }}
-      transition={{ delay: index * 0.04, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-      className="relative"
+      transition={{
+        layout: { duration: 0.42, ease: [0.16, 1, 0.3, 1] },
+        opacity: { delay: index * 0.02, duration: 0.24 },
+        y: { delay: index * 0.02, duration: 0.3, ease: [0.16, 1, 0.3, 1] },
+      }}
+      whileHover={{ y: -2 }}
+      className="group relative h-full overflow-hidden rounded-[18px] border border-white/8 bg-[#0d1318]/88 p-3.5 shadow-[0_8px_24px_rgba(0,0,0,0.14)] transition-colors duration-300 hover:border-white/14 hover:bg-[#11181f]/92"
     >
-      {beamOrigin && <BeamPortal x={beamOrigin.x} y={beamOrigin.y} sc1={sc1} sc2={sc2} />}
+      <div className="pointer-events-none absolute inset-0">
+        <div
+          className="absolute inset-x-3.5 top-0 h-px opacity-65"
+          style={{ background: `linear-gradient(90deg, transparent, ${color}42, transparent)` }}
+        />
+      </div>
 
-      <motion.div
-        onClick={!awakened ? touch : undefined}
-        className="group relative overflow-hidden rounded-2xl border-b border-white/8 bg-white/[0.02] select-none"
-        style={{
-          cursor: awakened ? 'default' : 'pointer',
-          background: awakened ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.015)',
-          borderColor: awakened ? `${sc1}0.14)` : 'rgba(255,255,255,0.05)',
-          transition: 'border-color 0.5s, background 0.5s',
-        }}
-        whileHover={{ backgroundColor: 'rgba(255,255,255,0.03)' }}
-      >
-        <div className="pointer-events-none absolute inset-0">
-          <div
-            className="absolute left-6 right-6 top-0 h-px transition-opacity duration-500"
-            style={{
-              background: `linear-gradient(90deg, transparent, ${sc1}0.7), transparent)`,
-              opacity: awakened ? 1 : 0.35,
-            }}
-          />
-        </div>
-
-        <div className="relative p-5 md:px-6">
-          <div className="flex items-start gap-4">
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                <div className="min-w-0">
-                  <h3
-                    className="truncate text-base font-semibold text-white"
-                    style={{ fontFamily: 'Space Grotesk' }}
-                  >
-                    {repo.name}
-                  </h3>
-                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500">
-                    <span className="flex items-center gap-1.5">
-                      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} />
-                      {repo.language || 'Unknown'}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock size={11} />
-                      {timeSince(repo.pushed_at)}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 text-[11px] text-slate-500">
-                  <span>{awakened ? 'Open on GitHub' : 'Tap to expand'}</span>
-                  {awakened ? (
-                    <a
-                      href={repo.html_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={event => event.stopPropagation()}
-                      className="transition-colors hover:text-white"
-                    >
-                      <ExternalLink size={13} />
-                    </a>
-                  ) : (
-                    <motion.div
-                      animate={{ rotate: awakened ? 45 : 0 }}
-                      transition={{ duration: 0.35 }}
-                      className="text-slate-400"
-                    >
-                      +
-                    </motion.div>
-                  )}
-                </div>
-              </div>
-
-              <AnimatePresence initial={false}>
-                {awakened && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-                    className="overflow-hidden"
-                  >
-                    <div className="pt-4">
-                      <p className="max-w-3xl text-sm leading-relaxed text-slate-400">
-                        {repo.description || 'No description provided.'}
-                      </p>
-
-                      {repo.topics?.length > 0 && (
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          {repo.topics.slice(0, 5).map(topic => (
-                            <span
-                              key={topic}
-                              className="rounded-full border border-white/8 px-2.5 py-1 text-[10px] text-slate-400"
-                            >
-                              {topic}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-
-                      <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-white/8 pt-4 text-[11px] text-slate-500">
-                        {repo.stargazers_count > 0 && (
-                          <span className="flex items-center gap-1.5">
-                            <Star size={12} className="text-amber-400" />
-                            {repo.stargazers_count} stars
-                          </span>
-                        )}
-                        {repo.forks_count > 0 && (
-                          <span className="flex items-center gap-1.5">
-                            <GitFork size={12} />
-                            {repo.forks_count} forks
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+      <div className="relative flex h-full flex-col">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] uppercase tracking-[0.14em] text-slate-500">
+              <span className="text-slate-300" style={{ fontFamily: 'Space Grotesk' }}>
+                {repo.language || 'Unknown'}
+              </span>
+              <span className="h-3 w-px bg-white/10" />
+              <span className="inline-flex items-center gap-1.5 text-slate-500">
+                <Clock size={11} />
+                {timeSince(repo.pushed_at)}
+              </span>
             </div>
+
+            <h3
+              className="truncate text-[14px] font-semibold tracking-tight text-slate-50"
+              style={{ fontFamily: 'Space Grotesk' }}
+            >
+              {repo.name}
+            </h3>
+
+            {author && <p className="mt-0.5 text-[11px] text-slate-500">by {author}</p>}
           </div>
+
+          <a
+            href={repo.html_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 pb-1 text-[11px] uppercase tracking-[0.18em] text-slate-500 transition-colors duration-300 hover:text-slate-200"
+            style={{ fontFamily: 'Space Grotesk' }}
+            aria-label={`Open ${repo.name} on GitHub`}
+          >
+            View
+          </a>
         </div>
-      </motion.div>
-    </motion.div>
+
+        <p className="mt-2 line-clamp-2 min-h-[2.4rem] text-[13px] leading-5 text-slate-400">
+          {repo.description || 'No description provided.'}
+        </p>
+
+        {repo.topics?.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1">
+            {repo.topics.slice(0, 2).map((topic, topicIndex) => (
+              <span
+                key={`${repo.id}-${topic}-${topicIndex}`}
+                className="rounded-full border border-white/8 bg-white/[0.025] px-2 py-0.5 text-[10px] text-slate-400 transition-colors duration-300 group-hover:border-white/12 group-hover:text-slate-300"
+              >
+                {topic}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-3 flex items-center gap-3 border-t border-white/6 pt-2.5 text-[11px] text-slate-500">
+          <span className="flex items-center gap-1.5">
+            <Star size={11} className="text-amber-500" />
+            {formatCount(repo.stargazers_count || 0)}
+          </span>
+          <span className="flex items-center gap-1.5">
+            <GitFork size={11} />
+            {formatCount(repo.forks_count || 0)}
+          </span>
+          <span className="ml-auto text-slate-500 transition-colors duration-300 group-hover:text-slate-300">
+            GitHub
+          </span>
+        </div>
+      </div>
+    </motion.article>
   )
 }
 
@@ -263,8 +140,6 @@ export default function Projects() {
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.05 })
   const [activeFilter, setActiveFilter] = useState('All')
   const [search, setSearch] = useState('')
-  const [ignitingAll, setIgnitingAll] = useState(false)
-  const awakenMap = useRef(new Map())
 
   const languages = useMemo(() => {
     const langs = repos.map(repo => repo.language).filter(Boolean)
@@ -290,17 +165,6 @@ export default function Projects() {
     return result
   }, [repos, activeFilter, search])
 
-  function igniteAll() {
-    if (ignitingAll) return
-
-    setIgnitingAll(true)
-    const fns = Array.from(awakenMap.current.values())
-    fns.forEach((fn, index) => {
-      setTimeout(fn, index * 120)
-    })
-    setTimeout(() => setIgnitingAll(false), fns.length * 120 + 1200)
-  }
-
   return (
     <section id="projects" className="relative py-24 px-6" ref={ref}>
       <div className="mx-auto max-w-6xl">
@@ -310,7 +174,6 @@ export default function Projects() {
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6 }}
           >
-            <SectionLabel align="start">Open Source</SectionLabel>
             <motion.h2
               initial={{ opacity: 0, y: 24 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
@@ -327,8 +190,8 @@ export default function Projects() {
             transition={{ delay: 0.2, duration: 0.6 }}
             className="max-w-md text-sm leading-relaxed text-slate-400 md:justify-self-end md:text-base"
           >
-            A living archive of experiments, tools, and code. Touch each spirit to awaken its
-            memory and step through the work behind it.
+            A living archive of experiments, tools, and code. Each repository is surfaced
+            immediately, with a calmer interface that keeps the work readable and within reach.
           </motion.p>
         </div>
 
@@ -336,18 +199,18 @@ export default function Projects() {
           initial={{ opacity: 0, y: 20 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ delay: 0.25, duration: 0.6 }}
-          className="mb-8 flex flex-col items-start gap-4 lg:flex-row lg:items-center lg:justify-between"
+          className="mb-6"
         >
-          <div className="flex w-full flex-col gap-4 lg:flex-row lg:items-center">
-            <div className="relative w-full max-w-xs">
-            <Search size={14} className="absolute left-0 top-1/2 -translate-y-1/2 text-slate-600" />
-            <input
-              value={search}
-              onChange={event => setSearch(event.target.value)}
-              placeholder="Search spirits..."
-              className="w-full border-b border-white/8 bg-transparent py-2 pl-7 pr-2 text-sm text-white transition-colors placeholder:text-slate-700 focus:border-sky-400/30 focus:outline-none"
-            />
-          </div>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="relative w-full max-w-sm">
+              <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+              <input
+                value={search}
+                onChange={event => setSearch(event.target.value)}
+                placeholder="Search repositories..."
+                className="w-full rounded-full border border-white/8 bg-black/10 py-3 pl-11 pr-4 text-sm text-white transition-colors placeholder:text-slate-600 focus:border-sky-400/30 focus:outline-none"
+              />
+            </div>
 
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
               {languages.map(lang => {
@@ -382,30 +245,6 @@ export default function Projects() {
               })}
             </div>
           </div>
-
-          {!loading && filtered.length > 0 && (
-            <motion.button
-              onClick={igniteAll}
-              disabled={ignitingAll}
-              whileHover={{ y: -1 }}
-              whileTap={{ scale: 0.98 }}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4 }}
-              className="flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] transition-colors"
-              style={{
-                background: 'transparent',
-                borderColor: ignitingAll ? 'rgba(255,200,80,0.12)' : 'rgba(255,200,80,0.22)',
-                color: ignitingAll ? 'rgba(255,200,80,0.4)' : 'rgba(255,220,120,0.88)',
-                cursor: ignitingAll ? 'default' : 'pointer',
-              }}
-            >
-              <Flame size={11} />
-              <span style={{ fontFamily: 'Space Grotesk' }}>
-                {ignitingAll ? 'Awakening...' : 'Awaken All'}
-              </span>
-            </motion.button>
-          )}
         </motion.div>
 
         {!loading && (
@@ -416,11 +255,11 @@ export default function Projects() {
         )}
 
         {loading && (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
             {Array.from({ length: 6 }).map((_, index) => (
               <div
                 key={index}
-                className="h-36 rounded-2xl border border-white/5 bg-white/[0.02] p-5 animate-pulse"
+                className="h-36 rounded-[18px] border border-white/6 bg-white/[0.025] animate-pulse"
               />
             ))}
           </div>
@@ -431,17 +270,11 @@ export default function Projects() {
         )}
 
         {!loading && !error && (
-          <LayoutGroup>
-            <motion.div className="flex flex-col divide-y divide-white/6 rounded-2xl border border-white/6 bg-white/[0.015]" layout>
+          <>
+            <motion.div layout className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
               <AnimatePresence mode="popLayout">
                 {filtered.map((repo, index) => (
-                  <RepoCard
-                    key={repo.id}
-                    repo={repo}
-                    index={index}
-                    onRegister={fn => awakenMap.current.set(repo.id, fn)}
-                    onUnregister={() => awakenMap.current.delete(repo.id)}
-                  />
+                  <RepoCard key={repo.id} repo={repo} index={index} />
                 ))}
               </AnimatePresence>
             </motion.div>
@@ -455,7 +288,7 @@ export default function Projects() {
                 No spirits found.
               </motion.div>
             )}
-          </LayoutGroup>
+          </>
         )}
       </div>
     </section>

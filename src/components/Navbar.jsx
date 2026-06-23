@@ -14,6 +14,8 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [logoClicks, setLogoClicks] = useState(0)
   const [eggActive, setEggActive] = useState(false)
+  const [hoveredLink, setHoveredLink] = useState(null)
+  const [activeLink, setActiveLink] = useState(NAV_LINKS[0].href)
   const eggTimer = useRef(null)
 
   function handleLogoClick(event) {
@@ -30,7 +32,26 @@ export default function Navbar() {
   }
 
   useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 40)
+    const handler = () => {
+      setScrolled(window.scrollY > 40)
+
+      const offset = 140
+      let current = NAV_LINKS[0].href
+
+      for (const link of NAV_LINKS) {
+        const id = link.href.slice(1)
+        const section = document.getElementById(id)
+        if (!section) continue
+
+        if (window.scrollY + offset >= section.offsetTop) {
+          current = link.href
+        }
+      }
+
+      setActiveLink(current)
+    }
+
+    handler()
     window.addEventListener('scroll', handler)
     return () => window.removeEventListener('scroll', handler)
   }, [])
@@ -102,16 +123,37 @@ export default function Navbar() {
           </AnimatePresence>
         </motion.a>
 
-        <div className="hidden items-center gap-1 md:flex">
+        <div className="hidden items-center gap-6 md:flex" onMouseLeave={() => setHoveredLink(null)}>
           {NAV_LINKS.map(link => (
             <motion.a
               key={link.href}
               href={link.href}
-              className="group relative rounded-lg px-4 py-2 text-sm text-slate-400 transition-colors hover:text-white"
-              whileHover={{ backgroundColor: 'rgba(125,211,252,0.06)' }}
+              onMouseEnter={() => setHoveredLink(link.href)}
+              className={`group relative overflow-hidden py-2 text-sm transition-colors ${
+                activeLink === link.href ? 'text-white' : 'text-slate-400 hover:text-white'
+              }`}
+              whileHover={{ y: -1 }}
+              whileTap={{ scale: 0.98 }}
             >
-              {link.label}
-              <span className="absolute bottom-1 left-4 right-4 h-px scale-x-0 bg-gradient-to-r from-sky-400/0 via-sky-400/60 to-sky-400/0 transition-transform duration-300 group-hover:scale-x-100" />
+              <span className="relative z-10 inline-flex items-center">
+                <motion.span
+                  animate={hoveredLink === link.href ? { y: -1 } : { y: 0 }}
+                  transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  {link.label}
+                </motion.span>
+              </span>
+
+              <motion.span
+                className="absolute bottom-1 left-0 right-0 h-px origin-center bg-gradient-to-r from-sky-400/0 via-sky-300/80 to-sky-400/0"
+                initial={false}
+                animate={
+                  hoveredLink === link.href || activeLink === link.href
+                    ? { scaleX: 1, opacity: 1 }
+                    : { scaleX: 0.35, opacity: 0 }
+                }
+                transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+              />
             </motion.a>
           ))}
         </div>
@@ -153,7 +195,9 @@ export default function Navbar() {
                   key={link.href}
                   href={link.href}
                   onClick={() => setMobileOpen(false)}
-                  className="border-b border-white/5 py-3 text-slate-300 transition-colors hover:text-white"
+                  className={`border-b border-white/5 py-3 transition-colors hover:text-white ${
+                    activeLink === link.href ? 'text-white' : 'text-slate-300'
+                  }`}
                 >
                   {link.label}
                 </a>

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
 import { GitBranch, ChevronDown } from 'lucide-react'
+import { notify } from '../lib/toast'
 
 function TypewriterText({ texts }) {
   const elRef = useRef(null)
@@ -62,6 +63,37 @@ export default function Hero() {
   function handleMouseMove(event) {
     mouseX.set(event.clientX - window.innerWidth / 2)
     mouseY.set(event.clientY - window.innerHeight / 2)
+  }
+
+  function handleJoinUs(event) {
+    event.preventDefault()
+
+    // notify.show({
+    //   id: 'join-us',
+    //   title: 'Join Us',
+    //   description:
+    //     'Please contact via Github email.',
+    //   action: {
+    //     label: 'View Projects',
+    //     onClick: () => {
+    //       window.location.hash = '#projects'
+    //       notify.dismiss('join-us')
+    //     },
+    //   },
+    // })
+    notify.show({
+      id: 'join-us',
+      description:
+        'Please contact via Github email.',
+      descriptionSize: 16,
+      radius: 10,
+      paddingX: 18,
+      paddingY: 9,
+      blur: 2,
+      backgroundOpacity: 0.28,
+      surfaceFadeDuration: 0.3,
+      textFadeDuration: 0.24,
+    })
   }
 
   return (
@@ -163,16 +195,14 @@ export default function Hero() {
         className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3"
       >
         <motion.a
-          href="https://github.com/that-sky-project"
-          target="_blank"
-          rel="noopener noreferrer"
+          href="#projects"
           className="group relative flex items-center gap-2 pb-1 text-sm text-white/88 transition-colors hover:text-white"
           style={{ fontFamily: 'Space Grotesk' }}
           whileHover={{ y: -1 }}
           whileTap={{ scale: 0.98 }}
         >
           <GitBranch size={16} />
-          Explore GitHub
+          View Projects
           <span className="text-slate-500 transition-transform duration-300 group-hover:translate-x-1 group-hover:text-slate-300">
             →
           </span>
@@ -180,13 +210,14 @@ export default function Hero() {
         </motion.a>
 
         <motion.a
-          href="#projects"
+          href="#"
+          onClick={handleJoinUs}
           className="group relative flex items-center gap-2 pb-1 text-sm text-slate-400 transition-colors hover:text-white"
           style={{ fontFamily: 'Space Grotesk' }}
           whileHover={{ y: -1 }}
           whileTap={{ scale: 0.98 }}
         >
-          View Projects
+          Join Us
           <span className="absolute bottom-0 left-0 h-px w-0 bg-white/70 transition-all duration-300 group-hover:w-full" />
         </motion.a>
       </motion.div>
