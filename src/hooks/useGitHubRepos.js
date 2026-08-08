@@ -1,7 +1,8 @@
 import { useState, useEffect, startTransition } from 'react'
 
-const CACHE_VERSION = 1
+const CACHE_VERSION = 3
 const CACHE_KEY_PREFIX = 'github-repos-cache'
+const reposRequests = new Map()
 
 function fnv1a32(value) {
   let hash = 0x811c9dc5
@@ -18,26 +19,16 @@ function getCacheKey(org) {
   return `${CACHE_KEY_PREFIX}:${org}`
 }
 
-function createRepoSignaturePayload(repos) {
-  return repos
-    .map(repo => ({
-      id: repo.id,
-      name: repo.name,
-      full_name: repo.full_name,
-      html_url: repo.html_url,
-      description: repo.description || '',
-      language: repo.language || '',
-      stargazers_count: repo.stargazers_count || 0,
-      forks_count: repo.forks_count || 0,
-      pushed_at: repo.pushed_at || '',
-      owner: repo.owner?.login || '',
-      topics: [...(repo.topics || [])].sort(),
-    }))
-    .sort((a, b) => a.id - b.id)
+function removeReposCache(org) {
+  try {
+    window.localStorage.removeItem(getCacheKey(org))
+  } catch {
+    // Ignore storage privacy mode failures.
+  }
 }
 
 function createReposSignature(repos) {
-  return fnv1a32(JSON.stringify(createRepoSignaturePayload(repos)))
+  return fnv1a32(JSON.stringify(repos))
 }
 
 function readReposCache(org) {
@@ -53,97 +44,90 @@ function readReposCache(org) {
       !Array.isArray(parsed.repos) ||
       typeof parsed.signature !== 'string'
     ) {
+      removeReposCache(org)
       return null
     }
 
     return parsed
   } catch {
+    removeReposCache(org)
     return null
   }
-}
-
-function scheduleCacheWrite(callback) {
-  if (typeof window === 'undefined') return
-
-  if (typeof window.requestIdleCallback === 'function') {
-    window.requestIdleCallback(() => {
-      callback()
-    })
-    return
-  }
-
-  window.setTimeout(() => {
-    callback()
-  }, 0)
 }
 
 function syncReposCache(org, repos) {
   if (typeof window === 'undefined') return
 
   const signature = createReposSignature(repos)
-  const cached = readReposCache(org)
 
-  if (cached?.signature === signature) return
-
-  scheduleCacheWrite(() => {
-    try {
-      window.localStorage.setItem(
-        getCacheKey(org),
-        JSON.stringify({
-          version: CACHE_VERSION,
-          signature,
-          repos,
-          updatedAt: Date.now(),
-        })
-      )
-    } catch {
-      // Ignore storage quota and privacy mode failures.
-    }
-  })
+  try {
+    window.localStorage.setItem(
+      getCacheKey(org),
+      JSON.stringify({
+        version: CACHE_VERSION,
+        signature,
+        repos,
+        updatedAt: Date.now(),
+      })
+    )
+  } catch {
+    // Ignore storage quota and privacy mode failures.
+  }
 }
 
 function normalizeRepos(data) {
-  return data.filter(repo => !repo.fork && !repo.archived)
+  //return data.filter(repo => !repo.fork && !repo.archived)
+  return Array.isArray(data) ? data : []
+}
+
+function fetchReposForOrg(org) {
+  if (reposRequests.has(org)) return reposRequests.get(org)
+
+  const request = fetch(`https://api.github.com/orgs/${org}/repos?sort=updated&per_page=50`)
+    .then(res => {
+      if (!res.ok) {
+        throw new Error(`Failed to fetch repos: ${res.status}`)
+      }
+
+      return res.json()
+    })
+    .then(data => {
+      const nextRepos = normalizeRepos(data)
+
+      syncReposCache(org, nextRepos)
+
+      return nextRepos
+    })
+    .finally(() => {
+      reposRequests.delete(org)
+    })
+
+  reposRequests.set(org, request)
+
+  return request
 }
 
 export function useGitHubRepos(org) {
-  const [repos, setRepos] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [repos, setRepos] = useState(() => readReposCache(org)?.repos || [])
+  const [loading, setLoading] = useState(() => !readReposCache(org)?.repos?.length)
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    const controller = new AbortController()
+    let active = true
     const cached = readReposCache(org)
-
-    if (cached?.repos?.length) {
-      setRepos(cached.repos)
-      setLoading(false)
-    } else {
-      setLoading(true)
-    }
 
     async function fetchRepos() {
       setError(null)
 
       try {
-        const res = await fetch(
-          `https://api.github.com/orgs/${org}/repos?sort=updated&per_page=50`,
-          { signal: controller.signal }
-        )
+        const nextRepos = await fetchReposForOrg(org)
 
-        if (!res.ok) {
-          throw new Error(`Failed to fetch repos: ${res.status}`)
-        }
-
-        const data = await res.json()
-        const nextRepos = normalizeRepos(data)
-
+        if (!active) return
         startTransition(() => {
           setRepos(nextRepos)
         })
-        syncReposCache(org, nextRepos)
       } catch (err) {
-        if (err.name === 'AbortError') return
+        if (!active) return
 
         if (cached) {
           startTransition(() => {
@@ -154,7 +138,7 @@ export function useGitHubRepos(org) {
 
         setError(err.message)
       } finally {
-        if (!controller.signal.aborted) {
+        if (active) {
           setLoading(false)
         }
       }
@@ -163,7 +147,7 @@ export function useGitHubRepos(org) {
     fetchRepos()
 
     return () => {
-      controller.abort()
+      active = false
     }
   }, [org])
 

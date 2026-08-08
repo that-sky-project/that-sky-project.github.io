@@ -1,8 +1,11 @@
-import { useMemo, useState } from 'react'
+import { memo, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useInView } from 'react-intersection-observer'
-import { Star, GitFork, Clock, Search } from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronRight, Clock, GitFork, Search, Star } from 'lucide-react'
 import { useGitHubRepos } from '../hooks/useGitHubRepos'
+
+const PAGE_SIZE = 6
+const PAGE_WINDOW_SIZE = 5
 
 const LANG_COLORS = {
   JavaScript: '#f7df1e',
@@ -18,6 +21,37 @@ const LANG_COLORS = {
   Shell: '#89e051',
   Vue: '#41b883',
   Svelte: '#ff3e00',
+}
+
+const SORT_OPTIONS = [
+  { value: 'updated', label: 'Updated' },
+  { value: 'published', label: 'Published' },
+  { value: 'stars', label: 'Stars' },
+  { value: 'forks', label: 'Forks' },
+]
+
+function getRepoDate(repo, key) {
+  const value = key === 'published' ? repo.created_at : repo.pushed_at
+  const time = Date.parse(value || '')
+
+  return Number.isNaN(time) ? 0 : time
+}
+
+function getSortValue(repo, sortKey) {
+  if (sortKey === 'stars') return repo.stargazers_count || 0
+  if (sortKey === 'forks') return repo.forks_count || 0
+
+  return getRepoDate(repo, sortKey)
+}
+
+function getPageWindow(currentPage, totalPages) {
+  const halfWindow = Math.floor(PAGE_WINDOW_SIZE / 2)
+  let start = Math.max(1, currentPage - halfWindow)
+  let end = Math.min(totalPages, start + PAGE_WINDOW_SIZE - 1)
+
+  start = Math.max(1, end - PAGE_WINDOW_SIZE + 1)
+
+  return Array.from({ length: end - start + 1 }, (_, index) => start + index)
 }
 
 function timeSince(dateStr) {
@@ -39,7 +73,7 @@ function formatCount(value) {
   )
 }
 
-function RepoCard({ repo, index }) {
+const RepoCard = memo(function RepoCard({ repo, index }) {
   const color = LANG_COLORS[repo.language] || '#94a3b8'
   const author = repo.owner?.login
 
@@ -133,13 +167,17 @@ function RepoCard({ repo, index }) {
       </div>
     </motion.article>
   )
-}
+})
 
 export default function Projects() {
   const { repos, loading, error } = useGitHubRepos('that-sky-project')
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.05 })
   const [activeFilter, setActiveFilter] = useState('All')
   const [search, setSearch] = useState('')
+  const [sortKey, setSortKey] = useState('updated')
+  const [sortDirection, setSortDirection] = useState('desc')
+  const [sortMenuOpen, setSortMenuOpen] = useState(false)
+  const [page, setPage] = useState(1)
 
   const languages = useMemo(() => {
     const langs = repos.map(repo => repo.language).filter(Boolean)
@@ -158,12 +196,39 @@ export default function Projects() {
       result = result.filter(repo =>
         repo.name.toLowerCase().includes(query) ||
         (repo.description || '').toLowerCase().includes(query) ||
-        (repo.topics || []).some(topic => topic.includes(query))
+        (repo.topics || []).some(topic => topic.toLowerCase().includes(query))
       )
     }
 
     return result
   }, [repos, activeFilter, search])
+
+  const sorted = useMemo(() => {
+    const direction = sortDirection === 'asc' ? 1 : -1
+
+    return filtered
+      .map((repo, index) => ({ repo, index }))
+      .sort((a, b) => {
+        const valueA = getSortValue(a.repo, sortKey)
+        const valueB = getSortValue(b.repo, sortKey)
+
+        if (valueA === valueB) return a.index - b.index
+
+        return (valueA - valueB) * direction
+      })
+      .map(item => item.repo)
+  }, [filtered, sortKey, sortDirection])
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE))
+  const currentPage = Math.min(page, totalPages)
+  const pageStart = (currentPage - 1) * PAGE_SIZE
+  const visibleRepos = useMemo(
+    () => sorted.slice(pageStart, pageStart + PAGE_SIZE),
+    [sorted, pageStart]
+  )
+  const pageNumbers = useMemo(() => getPageWindow(currentPage, totalPages), [currentPage, totalPages])
+  const pageEnd = Math.min(pageStart + visibleRepos.length, sorted.length)
+  const activeSort = SORT_OPTIONS.find(option => option.value === sortKey) || SORT_OPTIONS[0]
 
   return (
     <section id="projects" className="relative py-24 px-6" ref={ref}>
@@ -201,56 +266,140 @@ export default function Projects() {
           transition={{ delay: 0.25, duration: 0.6 }}
           className="mb-6"
         >
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="relative w-full max-w-sm">
               <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
               <input
                 value={search}
-                onChange={event => setSearch(event.target.value)}
+                onChange={event => {
+                  setSearch(event.target.value)
+                  setPage(1)
+                }}
                 placeholder="Search repositories..."
                 className="w-full rounded-full border border-white/8 bg-black/10 py-3 pl-11 pr-4 text-sm text-white transition-colors placeholder:text-slate-600 focus:border-sky-400/30 focus:outline-none"
               />
             </div>
 
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-              {languages.map(lang => {
-                const active = activeFilter === lang
+            <div className="flex flex-col gap-4 lg:items-end">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                {languages.map(lang => {
+                  const active = activeFilter === lang
 
-                return (
+                  return (
+                    <motion.button
+                      key={lang}
+                      onClick={() => {
+                        setActiveFilter(lang)
+                        setPage(1)
+                      }}
+                      whileHover={{ y: -1 }}
+                      whileTap={{ scale: 0.98 }}
+                      className={`relative flex items-center gap-1.5 pb-1 text-xs transition-colors ${
+                        active ? 'text-white' : 'text-slate-500 hover:text-slate-300'
+                      }`}
+                      style={{ fontFamily: 'Space Grotesk' }}
+                    >
+                      {lang !== 'All' && (
+                        <span
+                          className="h-1.5 w-1.5 rounded-full"
+                          style={{ backgroundColor: LANG_COLORS[lang] || '#94a3b8' }}
+                        />
+                      )}
+                      <span>{lang}</span>
+                      <span
+                        className={`absolute bottom-0 left-0 h-px transition-all duration-300 ${
+                          active ? 'w-full opacity-100' : 'w-0 opacity-0'
+                        }`}
+                        style={{ background: active ? 'rgba(125,211,252,0.8)' : 'rgba(125,211,252,0)' }}
+                      />
+                    </motion.button>
+                  )
+                })}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="relative">
                   <motion.button
-                    key={lang}
-                    onClick={() => setActiveFilter(lang)}
+                    type="button"
+                    onClick={() => setSortMenuOpen(open => !open)}
                     whileHover={{ y: -1 }}
                     whileTap={{ scale: 0.98 }}
-                    className={`relative flex items-center gap-1.5 pb-1 text-xs transition-colors ${
-                      active ? 'text-white' : 'text-slate-500 hover:text-slate-300'
-                    }`}
+                    className="inline-flex h-7 items-center gap-1.5 border-b border-white/10 px-1 text-[11px] text-slate-400 transition-colors hover:border-white/20 hover:text-slate-200"
                     style={{ fontFamily: 'Space Grotesk' }}
+                    aria-haspopup="menu"
+                    aria-expanded={sortMenuOpen}
                   >
-                    {lang !== 'All' && (
-                      <span
-                        className="h-1.5 w-1.5 rounded-full"
-                        style={{ backgroundColor: LANG_COLORS[lang] || '#94a3b8' }}
-                      />
-                    )}
-                    <span>{lang}</span>
-                    <span
-                      className={`absolute bottom-0 left-0 h-px transition-all duration-300 ${
-                        active ? 'w-full opacity-100' : 'w-0 opacity-0'
-                      }`}
-                      style={{ background: active ? 'rgba(125,211,252,0.8)' : 'rgba(125,211,252,0)' }}
+                    <span>{activeSort.label}</span>
+                    <ChevronDown
+                      size={12}
+                      className={`transition-transform duration-200 ${sortMenuOpen ? 'rotate-180' : ''}`}
                     />
                   </motion.button>
-                )
-              })}
+
+                  <AnimatePresence>
+                    {sortMenuOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -4 }}
+                        transition={{ duration: 0.16 }}
+                        className="absolute right-0 top-9 z-20 min-w-32 border border-white/10 bg-[#0b1015]/95 py-1 shadow-[0_10px_30px_rgba(0,0,0,0.26)]"
+                        role="menu"
+                      >
+                        {SORT_OPTIONS.map(option => {
+                          const active = option.value === sortKey
+
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => {
+                                setSortKey(option.value)
+                                setSortMenuOpen(false)
+                                setPage(1)
+                              }}
+                              className={`flex w-full items-center justify-between px-3 py-1.5 text-left text-[11px] transition-colors ${
+                                active
+                                  ? 'text-slate-100'
+                                  : 'text-slate-500 hover:bg-white/[0.035] hover:text-slate-300'
+                              }`}
+                              style={{ fontFamily: 'Space Grotesk' }}
+                              role="menuitem"
+                            >
+                              {option.label}
+                              {active && <span className="h-1 w-1 rounded-full bg-sky-300/80" />}
+                            </button>
+                          )
+                        })}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                <motion.button
+                  type="button"
+                  onClick={() => {
+                    setSortDirection(direction => (direction === 'desc' ? 'asc' : 'desc'))
+                    setPage(1)
+                  }}
+                  whileHover={{ y: -1 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="h-7 border-b border-white/10 px-1 text-sm leading-none text-slate-400 transition-colors hover:border-white/20 hover:text-slate-200"
+                  style={{ fontFamily: 'Space Grotesk' }}
+                  aria-label={`Sort ${sortDirection === 'desc' ? 'descending' : 'ascending'}`}
+                >
+                  {sortDirection === 'desc' ? '↓' : '↑'}
+                </motion.button>
+              </div>
             </div>
           </div>
         </motion.div>
 
         {!loading && (
           <p className="mb-6 text-xs uppercase tracking-[0.2em] text-slate-600">
-            {filtered.length} {filtered.length === 1 ? 'spirit' : 'spirits'}
+            {sorted.length} {sorted.length === 1 ? 'spirit' : 'spirits'}
             {activeFilter !== 'All' ? ` / ${activeFilter}` : ''}
+            {sorted.length > 0 ? ` / ${pageStart + 1}-${pageEnd}` : ''}
           </p>
         )}
 
@@ -273,13 +422,13 @@ export default function Projects() {
           <>
             <motion.div layout className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
               <AnimatePresence mode="popLayout">
-                {filtered.map((repo, index) => (
+                {visibleRepos.map((repo, index) => (
                   <RepoCard key={repo.id} repo={repo} index={index} />
                 ))}
               </AnimatePresence>
             </motion.div>
 
-            {filtered.length === 0 && (
+            {sorted.length === 0 && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -287,6 +436,58 @@ export default function Projects() {
               >
                 No spirits found.
               </motion.div>
+            )}
+
+            {sorted.length > PAGE_SIZE && (
+              <nav className="mt-8 flex flex-wrap items-center justify-center gap-2" aria-label="Repository pages">
+                <motion.button
+                  type="button"
+                  onClick={() => setPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  whileHover={currentPage === 1 ? undefined : { y: -1 }}
+                  whileTap={currentPage === 1 ? undefined : { scale: 0.98 }}
+                  className="flex h-7 w-7 items-center justify-center text-slate-500 transition-colors hover:text-slate-200 disabled:pointer-events-none disabled:opacity-30"
+                  aria-label="Previous page"
+                >
+                  <ChevronLeft size={14} />
+                </motion.button>
+
+                {pageNumbers.map(pageNumber => {
+                  const active = pageNumber === currentPage
+
+                  return (
+                    <motion.button
+                      key={pageNumber}
+                      type="button"
+                      onClick={() => setPage(pageNumber)}
+                      whileHover={{ y: -1 }}
+                      whileTap={{ scale: 0.98 }}
+                      className={`h-7 min-w-7 border-b px-1.5 text-[11px] transition-colors ${
+                        active
+                          ? 'border-sky-300/70 text-white'
+                          : 'border-transparent text-slate-500 hover:border-white/14 hover:text-slate-200'
+                      }`}
+                      style={{ fontFamily: 'Space Grotesk' }}
+                      aria-label={`Page ${pageNumber}`}
+                      aria-current={active ? 'page' : undefined}
+                    >
+                      {pageNumber}
+                    </motion.button>
+                  )
+                })}
+
+                <motion.button
+                  type="button"
+                  onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                  whileHover={currentPage === totalPages ? undefined : { y: -1 }}
+                  whileTap={currentPage === totalPages ? undefined : { scale: 0.98 }}
+                  className="flex h-7 w-7 items-center justify-center text-slate-500 transition-colors hover:text-slate-200 disabled:pointer-events-none disabled:opacity-30"
+                  aria-label="Next page"
+                >
+                  <ChevronRight size={14} />
+                </motion.button>
+              </nav>
             )}
           </>
         )}
