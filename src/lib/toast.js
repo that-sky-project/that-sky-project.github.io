@@ -14,7 +14,7 @@ function nextId() {
   return `toast-${Date.now()}-${idCounter}`
 }
 
-function normalizeToast(input, type = 'default') {
+function normalizeToast(input) {
   return {
     id: input.id || nextId(),
     title: input.title || '',
@@ -65,8 +65,8 @@ function setState(updater) {
   notifyListeners()
 }
 
-function addToast(input, type) {
-  const item = normalizeToast(input, type)
+function addToast(input) {
+  const item = normalizeToast(input)
 
   setState(current => [item, ...current.filter(toastItem => toastItem.id !== item.id)].slice(0, TOAST_LIMIT))
   scheduleToastTimer(item)
@@ -116,7 +116,7 @@ export function getToastState() {
 
 export const toast = {
   show(input) {
-    return addToast(input, 'default')
+    return addToast(input)
   },
   update(id, patch) {
     updateToast(id, patch)

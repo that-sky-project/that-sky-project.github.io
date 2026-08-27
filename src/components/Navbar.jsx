@@ -1,219 +1,111 @@
-import { useEffect, useRef, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { GitBranch, Menu, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { ArrowUpRight, GitBranch, Scale } from 'lucide-react'
 
-const NAV_LINKS = [
-  { href: '#about', label: 'About' },
-  { href: '#manifesto', label: 'Manifesto' },
-  { href: '#philosophy', label: 'Philosophy' },
-  { href: '#projects', label: 'Projects' },
+const SECTIONS = [
+  { href: '#about', id: 'about', label: 'About' },
+  { href: '#manifesto', id: 'manifesto', label: 'Manifesto' },
+  { href: '#philosophy', id: 'philosophy', label: 'Philosophy' },
+  { href: '#projects', id: 'projects', label: 'Projects' },
 ]
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
-  const [mobileOpen, setMobileOpen] = useState(false)
-  const [logoClicks, setLogoClicks] = useState(0)
-  const [eggActive, setEggActive] = useState(false)
-  const [hoveredLink, setHoveredLink] = useState(null)
-  const [activeLink, setActiveLink] = useState(NAV_LINKS[0].href)
-  const eggTimer = useRef(null)
-
-  function handleLogoClick(event) {
-    event.preventDefault()
-    const next = logoClicks + 1
-    setLogoClicks(next)
-
-    if (next >= 5) {
-      setLogoClicks(0)
-      setEggActive(true)
-      clearTimeout(eggTimer.current)
-      eggTimer.current = setTimeout(() => setEggActive(false), 2200)
-    }
-  }
+  const [activeSection, setActiveSection] = useState('about')
 
   useEffect(() => {
-    const handler = () => {
-      setScrolled(window.scrollY > 40)
+    let frame = 0
 
-      const offset = 140
-      let current = NAV_LINKS[0].href
+    const updateNavigation = () => {
+      frame = 0
+      setScrolled(window.scrollY > 24)
 
-      for (const link of NAV_LINKS) {
-        const id = link.href.slice(1)
-        const section = document.getElementById(id)
-        if (!section) continue
+      const readingLine = Math.min(window.innerHeight * 0.34, 300)
+      let current = SECTIONS[0].id
 
-        if (window.scrollY + offset >= section.offsetTop) {
-          current = link.href
+      SECTIONS.forEach(section => {
+        const element = document.getElementById(section.id)
+        if (element && element.getBoundingClientRect().top <= readingLine) {
+          current = section.id
         }
-      }
+      })
 
-      setActiveLink(current)
+      setActiveSection(previous => previous === current ? previous : current)
     }
 
-    handler()
-    window.addEventListener('scroll', handler)
-    return () => window.removeEventListener('scroll', handler)
+    const onScroll = () => {
+      if (frame) return
+      frame = window.requestAnimationFrame(updateNavigation)
+    }
+
+    updateNavigation()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll, { passive: true })
+
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame)
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+    }
   }, [])
 
   return (
-    <motion.nav
-      initial={{ y: -80, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-      className={`fixed left-0 right-0 top-0 z-50 transition-all duration-500 ${
-        scrolled
-          ? 'border-b border-[rgba(125,211,252,0.08)] bg-[#060810]/80 backdrop-blur-xl'
-          : 'bg-transparent'
-      }`}
-    >
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-        <motion.a
-          href="#"
-          className="group relative flex items-center gap-2.5"
-          whileHover={{ scale: 1.03 }}
-          onClick={handleLogoClick}
-        >
-          <div className="relative flex h-7 w-7 items-center justify-center">
-            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-sky-400/30 to-violet-500/20 blur-sm transition-all duration-400 group-hover:from-sky-400/50" />
-            <motion.svg
-              width="22"
-              height="22"
-              viewBox="0 0 22 22"
-              fill="none"
-              className="relative z-10"
-              animate={eggActive ? { rotate: [0, 180, 360, 540], scale: [1, 1.6, 0.8, 1] } : { rotate: 0, scale: 1 }}
-              transition={eggActive ? { duration: 0.7, ease: 'easeInOut' } : {}}
+    <>
+      <header className={`site-nav ${scrolled ? 'is-scrolled' : ''}`}>
+        <div className="container nav-inner">
+          <a href="#top" className="brand" aria-label="That Sky Project home">
+            <span className="brand-symbol">✦</span>
+            <span>That Sky Project</span>
+          </a>
+
+          <nav className="top-jumps" aria-label="External links">
+            <a href="https://github.com/that-sky-project" target="_blank" rel="noreferrer">
+              <GitBranch size={15} />
+              GitHub
+              <ArrowUpRight size={13} />
+            </a>
+            <a href="https://github.com/that-sky-project/.github/blob/main/profile/LEGAL_NOTICE.md" target="_blank" rel="noreferrer">
+              <Scale size={15} />
+              Legal Notice
+              <ArrowUpRight size={13} />
+            </a>
+          </nav>
+        </div>
+      </header>
+
+      <aside className="section-sidebar" aria-label="Page sections">
+        <span className="sidebar-caption">Explore</span>
+        <nav>
+          {SECTIONS.map(section => (
+            <a
+              key={section.id}
+              href={section.href}
+              className={activeSection === section.id ? 'active' : ''}
+              aria-current={activeSection === section.id ? 'location' : undefined}
+              onClick={() => setActiveSection(section.id)}
             >
-              <path
-                d="M11 1 L12.5 9.5 L21 11 L12.5 12.5 L11 21 L9.5 12.5 L1 11 L9.5 9.5 Z"
-                fill="url(#starGrad)"
-              />
-              <defs>
-                <linearGradient id="starGrad" x1="1" y1="1" x2="21" y2="21" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#7dd3fc" />
-                  <stop offset="1" stopColor="#a78bfa" />
-                </linearGradient>
-              </defs>
-            </motion.svg>
-          </div>
-
-          <span className="font-semibold tracking-wide text-white" style={{ fontFamily: 'Space Grotesk' }}>
-            That Sky
-          </span>
-
-          <AnimatePresence>
-            {eggActive && (
-              <motion.span
-                initial={{ opacity: 0, y: 4, x: -4 }}
-                animate={{ opacity: 1, y: -24, x: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.4 }}
-                className="pointer-events-none absolute left-0 top-0 whitespace-nowrap text-[11px] font-medium"
-                style={{
-                  background: 'linear-gradient(90deg,#7dd3fc,#a78bfa,#34d399)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  fontFamily: 'Space Grotesk',
-                }}
-              >
-                you found it ✦
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </motion.a>
-
-        <div className="hidden items-center gap-6 md:flex" onMouseLeave={() => setHoveredLink(null)}>
-          {NAV_LINKS.map(link => (
-            <motion.a
-              key={link.href}
-              href={link.href}
-              onMouseEnter={() => setHoveredLink(link.href)}
-              className={`group relative overflow-hidden py-2 text-sm transition-colors ${
-                activeLink === link.href ? 'text-white' : 'text-slate-400 hover:text-white'
-              }`}
-              whileHover={{ y: -1 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <span className="relative z-10 inline-flex items-center">
-                <motion.span
-                  animate={hoveredLink === link.href ? { y: -1 } : { y: 0 }}
-                  transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                >
-                  {link.label}
-                </motion.span>
-              </span>
-
-              <motion.span
-                className="absolute bottom-1 left-0 right-0 h-px origin-center bg-gradient-to-r from-sky-400/0 via-sky-300/80 to-sky-400/0"
-                initial={false}
-                animate={
-                  hoveredLink === link.href || activeLink === link.href
-                    ? { scaleX: 1, opacity: 1 }
-                    : { scaleX: 0.35, opacity: 0 }
-                }
-                transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
-              />
-            </motion.a>
+              <span className="sidebar-dot" />
+              <span className="sidebar-label">{section.label}</span>
+            </a>
           ))}
-        </div>
+        </nav>
+        <span className="sidebar-progress">
+          {SECTIONS.findIndex(section => section.id === activeSection) + 1} / {SECTIONS.length}
+        </span>
+      </aside>
 
-        <div className="hidden items-center gap-3 md:flex">
-          <motion.a
-            href="https://github.com/that-sky-project"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition-all hover:border-sky-400/30 hover:bg-white/10"
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
+      <nav className="mobile-sections" aria-label="Page sections">
+        {SECTIONS.map(section => (
+          <a
+            key={section.id}
+            href={section.href}
+            className={activeSection === section.id ? 'active' : ''}
+            aria-current={activeSection === section.id ? 'location' : undefined}
+            onClick={() => setActiveSection(section.id)}
           >
-            <GitBranch size={16} />
-            GitHub
-          </motion.a>
-        </div>
-
-        <button
-          onClick={() => setMobileOpen(value => !value)}
-          className="p-2 text-slate-400 transition-colors hover:text-white md:hidden"
-        >
-          {mobileOpen ? <X size={22} /> : <Menu size={22} />}
-        </button>
-      </div>
-
-      <AnimatePresence>
-        {mobileOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
-            className="overflow-hidden border-b border-[rgba(125,211,252,0.08)] bg-[#060810]/95 backdrop-blur-xl md:hidden"
-          >
-            <div className="flex flex-col gap-2 px-6 py-4">
-              {NAV_LINKS.map(link => (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMobileOpen(false)}
-                  className={`border-b border-white/5 py-3 transition-colors hover:text-white ${
-                    activeLink === link.href ? 'text-white' : 'text-slate-300'
-                  }`}
-                >
-                  {link.label}
-                </a>
-              ))}
-              <a
-                href="https://github.com/that-sky-project"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-2 flex items-center gap-2 text-sky-400"
-              >
-                <GitBranch size={16} /> GitHub
-              </a>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.nav>
+            {section.label}
+          </a>
+        ))}
+      </nav>
+    </>
   )
 }
