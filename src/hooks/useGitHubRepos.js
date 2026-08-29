@@ -86,7 +86,9 @@ function fetchReposForOrg(org) {
   const request = fetch(`https://api.github.com/orgs/${org}/repos?sort=updated&per_page=50`)
     .then(res => {
       if (!res.ok) {
-        throw new Error(`Failed to fetch repos: ${res.status}`)
+        const error = new Error(`Failed to fetch repos: ${res.status}`)
+        error.status = res.status
+        throw error
       }
 
       return res.json()
@@ -136,7 +138,7 @@ export function useGitHubRepos(org) {
           return
         }
 
-        setError(err.message)
+        setError(err.status === 403 ? 'rateLimited' : 'error')
       } finally {
         if (active) {
           setLoading(false)
