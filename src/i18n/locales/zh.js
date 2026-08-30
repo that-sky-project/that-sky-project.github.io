@@ -74,7 +74,7 @@ export default {
     searchLabel: '搜索仓库',
     sortLabel: '排序方式',
     filterAll: '全部',
-    fallbackLanguage: '开源',
+    fallbackLanguage: ' ',
     noDescription: '暂无描述。',
     recentlyUpdated: '最近更新',
     openRepo: '打开 {name}',

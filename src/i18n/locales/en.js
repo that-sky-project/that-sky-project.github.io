@@ -90,7 +90,7 @@ export default {
     searchLabel: 'Search repositories',
     sortLabel: 'Sort repositories',
     filterAll: 'All',
-    fallbackLanguage: 'Open source',
+    fallbackLanguage: ' ',
     noDescription: 'No description provided.',
     recentlyUpdated: 'Recently updated',
     openRepo: 'Open {name}',
