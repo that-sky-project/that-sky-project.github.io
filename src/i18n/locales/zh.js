@@ -43,8 +43,9 @@ export default {
   manifesto: {
     kicker: '宣言',
     title: '一份项目组宣言',
-    belief: '我们只谈技术，我们只干实事。',
+    belief: '社区会记住你做出的贡献。',
     points: {
+      tech: '我们只谈技术，我们只干实事。',
       respect: '我们尊重个体，我们求同存异。',
       exchange: '我们欢迎技术交流，我们拒绝伸手白嫖。',
       sharing: '我们贯彻知识共享理念，我们坚决拒绝商业因素。',

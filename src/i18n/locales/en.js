@@ -44,13 +44,14 @@ export default {
   manifesto: {
     kicker: 'Manifesto',
     title: 'A Project Group Manifesto',
-    belief: 'We talk only about tech; we do only real work.',
+    belief: 'The community will remember your contributions.',
     points: {
+      tech: 'We talk only about tech; we do only real work.',
       respect: 'We respect every individual; we seek common ground while embracing differences.',
       exchange: 'We welcome technical exchange; we reject freeloading.',
       sharing: 'We live by knowledge sharing; we keep it strictly non-commercial.',
       together:
-        'Together, a blazing fire; apart, stars across the sky. The community remembers what you contribute.',
+        'Together, a blazing fire; apart, stars across the sky. The community will remember your contributions.',
       door: 'We hold the door open wide — the world behind it is yours to write.',
     },
     signature: 'That Sky Project',
