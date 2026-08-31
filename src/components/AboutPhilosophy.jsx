@@ -28,6 +28,7 @@ export function About() {
 }
 
 const MANIFESTO_LAYOUT = [
+  { key: 'tech' },
   { key: 'respect' },
   { key: 'exchange' },
   { key: 'sharing' },
@@ -47,7 +48,9 @@ export function Manifesto() {
         <div className="manifesto-heading">
           <p className="section-kicker">{t('manifesto.kicker')}</p>
           <h2>{t('manifesto.title')}</h2>
+          <span className="manifesto-quote-left">“</span>
           <p className="manifesto-belief">{t('manifesto.belief')}</p>
+          <span className="manifesto-quote-right">“</span>
         </div>
 
         <RevealGroup className="manifesto-statements" ref={listRef}>
