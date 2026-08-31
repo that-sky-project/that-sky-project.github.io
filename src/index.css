@@ -91,8 +91,8 @@ img, video, canvas { max-width: 100%; }
 .manifesto-inner { display: grid; grid-template-columns: minmax(280px, .62fr) minmax(0, 1fr); gap: 100px; }
 .manifesto-heading { position: sticky; top: 120px; align-self: start; }
 .manifesto-heading .section-kicker { color: var(--teal-light); }
-.manifesto-quote-left { font-size: 3em; line-height: 1; color: #888; font-family: Georgia, serif; float: left; vertical-align: middle; position: relative; top: 0.4em; }
-.manifesto-quote-right { display: inline-block; font-size: 3em; line-height: 1; color: #888; font-family: Georgia, serif; vertical-align: middle; transform: rotate(180deg); }
+.manifesto-quote-left { font-size: 3em; line-height: 1; color: #888; font-family: Arial, serif; float: left; vertical-align: middle; position: relative; top: 0.4em; }
+.manifesto-quote-right { display: inline-block; font-size: 3em; line-height: 1; color: #888; font-family: Arial, serif; vertical-align: middle; transform: rotate(180deg); }
 .manifesto-belief { max-width: min(300px, 80%); margin: 38px 0 0 0; color: rgba(255,255,255,.58); font-family: var(--display); font-size: 18px; line-height: 1.55; display: inline-block; }
 .manifesto-statements { border-top: 1px solid var(--line-light); padding-left: 0.5em; }
 .manifesto-statements > p { margin: 0; padding: 28px 0; border-bottom: 1px solid var(--line-light); color: rgba(255,255,255,.86); font-family: var(--display); font-size: clamp(18px, 2vw, 25px); letter-spacing: -.025em; line-height: 1.42; }
