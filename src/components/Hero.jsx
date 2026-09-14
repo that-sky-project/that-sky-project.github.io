@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { ArrowDown, ArrowUpRight, GitBranch } from 'lucide-react'
-import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import { notify } from '../lib/toast'
 import { useT } from '../i18n'
 
@@ -9,10 +9,6 @@ const EASE = [0.22, 0.61, 0.36, 1]
 export default function Hero() {
   const t = useT()
   const reduce = useReducedMotion()
-  const ref = useRef(null)
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] })
-  const skyY = useTransform(scrollYProgress, [0, 1], ['0%', reduce ? '0%' : '18%'])
-  const skyScale = useTransform(scrollYProgress, [0, 1], [1, reduce ? 1 : 1.12])
 
   function handleJoin(event) {
     event.preventDefault()
@@ -42,8 +38,8 @@ export default function Hero() {
   }
 
   return (
-    <section id="top" className="hero" ref={ref}>
-      <motion.div className="hero-sky" aria-hidden="true" style={{ y: skyY, scale: skyScale }}>
+    <section id="top" className="hero">
+      <motion.div className="hero-sky" aria-hidden="true">
         <span className="sky-arc sky-arc-one" />
         <span className="sky-arc sky-arc-two" />
         <span className="sky-star">✦</span>

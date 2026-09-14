@@ -56,8 +56,7 @@ img, video, canvas { max-width: 100%; }
 .mobile-sections { display: none; }
 
 .hero { position: relative; min-height: 760px; height: 100vh; max-height: 940px; overflow: hidden; background: linear-gradient(130deg, #191c1a 0%, #29352a 54%, #432b27 100%); color: white; }
-.hero-sky { position: absolute; inset: -2%; background-image: linear-gradient(90deg, rgba(10,18,25,.76) 0%, rgba(10,18,25,.42) 42%, rgba(10,18,25,.24) 100%), linear-gradient(180deg, rgba(10,18,25,.24) 0%, rgba(10,18,25,.06) 45%, rgba(10,18,25,.62) 100%), url('https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/2325290/3914b45fd51db82a719ff849f11a113cda2bfdfd/library_hero.jpg'); background-position: center, center, 50% 50%; background-size: cover; background-repeat: no-repeat; animation: sky-drift 28s ease-in-out infinite; }
-.hero-sky::after { position: absolute; inset: 0; background-image: radial-gradient(circle, rgba(255,255,255,.36) 0 1px, transparent 1.5px); background-size: 97px 97px; opacity: .16; content: ''; animation: glow-pulse 4.8s ease-in-out infinite; }
+.hero-sky { position: absolute; inset: -2%; background-image: linear-gradient(90deg, rgba(10,18,25,.76) 0%, rgba(10,18,25,.42) 42%, rgba(10,18,25,.24) 100%), linear-gradient(180deg, rgba(10,18,25,.24) 0%, rgba(10,18,25,.06) 45%, rgba(10,18,25,.62) 100%), url('https://www.yn12377.cn/jubao/upload/smjb/2026/09/14/d22ce0fbd40447e299639155bbd89ce1.jpg'); background-position: center; background-size: cover; background-repeat: no-repeat; will-change: transform; }
 .hero-sky::after { position: absolute; inset: 0; background-image: radial-gradient(circle, rgba(255,255,255,.36) 0 1px, transparent 1.5px); background-size: 97px 97px; opacity: .16; content: ''; animation: glow-pulse 4.8s ease-in-out infinite; }
 .sky-arc { position: absolute; border: 1px solid rgba(255,255,255,.13); border-radius: 50%; }
 .sky-arc-one { width: 720px; height: 720px; right: -220px; top: 40px; }
@@ -210,14 +209,12 @@ img, video, canvas { max-width: 100%; }
 
 @keyframes orbit-breathe { from { transform: scale(1) rotate(0deg); opacity: .72; } to { transform: scale(1.035) rotate(4deg); opacity: 1; } }
 @keyframes star-pulse { 0%, 100% { opacity: .62; transform: scale(.92) rotate(0deg); } 50% { opacity: 1; transform: scale(1.1) rotate(18deg); } }
-@keyframes sky-drift {
-  0%   { background-position: center, center, 50% 50%; }
-  50%  { background-position: center, center, 52% 49%; }
-  100% { background-position: center, center, 50% 50%; }
-}
+
+/* sky-drift removed — background-position animation caused forced reflows */
+@keyframes sky-drift { 0% { opacity: 1; } 50% { opacity: 1; } 100% { opacity: 1; } }
 @keyframes card-subtle-float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-2px); } }
 @keyframes fade-scale-in { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: scale(1); } }
-@keyframes glow-pulse { 0%, 100% { box-shadow: 0 0 20px rgba(179,201,143,.1), 0 0 40px rgba(179,201,143,.04); } 50% { box-shadow: 0 0 30px rgba(179,201,143,.18), 0 0 60px rgba(179,201,143,.08); } }
+@keyframes glow-pulse { 0%, 100% { opacity: .94; } 50% { opacity: 1; } }
 @keyframes light-shimmer { 0% { background-position: -300px 0; } 100% { background-position: 300px 0; } }
 @keyframes float-up { 0% { opacity: 0; transform: translateY(20px); } 50% { opacity: 1; } 100% { opacity: 0; transform: translateY(-60px); } }
 @keyframes subtle-glow { 0%, 100% { text-shadow: 0 0 10px rgba(179,201,143,.3); } 50% { text-shadow: 0 0 20px rgba(179,201,143,.6); } }
@@ -333,4 +330,10 @@ html[lang="zh"] .featured-copy h3, html[lang="zh"] .principle h3 { letter-spacin
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
   .skeleton-row { animation: none; }
+}
+
+/* Performance: defer off-screen animations */
+.hero, .about-section, .manifesto-section, .philosophy-section, .projects-section {
+  content-visibility: auto;
+  contain-intrinsic-size: 100vh;
 }
