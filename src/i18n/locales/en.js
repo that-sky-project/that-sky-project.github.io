@@ -29,7 +29,7 @@ export default {
       'Brought together by a shared passion for Sky: Children of the Light, we turn research, experiments, and open-source tools into something the wider community can actually use.',
     viewProjects: 'View Projects',
     join: 'Join Us',
-    joinToast: 'Please reach us through our GitHub organization.',
+    joinToast: 'Please reach us through our GitHub homepage email address.',
     scroll: 'Explore',
   },
   about: {

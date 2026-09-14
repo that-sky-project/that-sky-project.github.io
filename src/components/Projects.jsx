@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
-import { ArrowUpRight, ChevronLeft, ChevronRight, GitFork, Search, Star } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { ArrowUpRight, ChevronDown, ChevronLeft, ChevronRight, GitFork, Search, Star } from 'lucide-react'
 import { useGitHubRepos } from '../hooks/useGitHubRepos'
 import { useT } from '../i18n'
 import { Reveal, RevealGroup, RevealItem } from './Reveal'
@@ -9,6 +10,79 @@ const SORTERS = {
   updated: (a, b) => new Date(b.pushed_at) - new Date(a.pushed_at),
   stars: (a, b) => (b.stargazers_count || 0) - (a.stargazers_count || 0),
   name: (a, b) => a.name.localeCompare(b.name),
+}
+
+function SortSelect({ value, onChange, options, label }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+  const dropdownRef = useRef(null)
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 })
+
+  useEffect(() => {
+    if (!open) return
+
+    // 计算下拉框位置
+    if (ref.current) {
+      const rect = ref.current.getBoundingClientRect()
+      setDropdownPos({
+        top: rect.bottom + 6,
+        left: rect.right,
+      })
+    }
+
+    function onOutside(e) {
+      const isClickInTrigger = ref.current && ref.current.contains(e.target)
+      const isClickInDropdown = dropdownRef.current && dropdownRef.current.contains(e.target)
+      if (!isClickInTrigger && !isClickInDropdown) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onOutside)
+    return () => document.removeEventListener('mousedown', onOutside)
+  }, [open])
+
+  const current = options.find(o => o.value === value)
+
+  return (
+    <div className="sort-select" ref={ref}>
+      <button
+        className="sort-trigger"
+        onClick={() => setOpen(o => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={label}
+      >
+        {current?.label}
+        <ChevronDown size={12} className={open ? 'sort-chevron open' : 'sort-chevron'} />
+      </button>
+      {open && createPortal(
+        <div
+          ref={dropdownRef}
+          className="sort-dropdown"
+          role="listbox"
+          aria-label={label}
+          style={{
+            position: 'fixed',
+            top: `${dropdownPos.top}px`,
+            left: `${dropdownPos.left - 120}px`,
+          }}
+        >
+          {options.map(opt => (
+            <button
+              key={opt.value}
+              className={`sort-option${opt.value === value ? ' active' : ''}`}
+              role="option"
+              aria-selected={opt.value === value}
+              onClick={() => { onChange(opt.value); setOpen(false) }}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>,
+        document.body
+      )}
+    </div>
+  )
 }
 
 function FeaturedProject({ repo, t }) {
@@ -102,7 +176,11 @@ export default function Projects() {
             <Search size={16} />
             <input
               value={query}
-              onChange={event => updateFilter(setQuery)(event.target.value)}
+              onChange={event => {
+                const value = event.target.value
+                setQuery(value)
+                setPage(1)
+              }}
               placeholder={t('projects.searchPlaceholder')}
               aria-label={t('projects.searchLabel')}
             />
@@ -119,15 +197,16 @@ export default function Projects() {
               </button>
             ))}
           </div>
-          <select
+          <SortSelect
             value={sort}
-            onChange={event => updateFilter(setSort)(event.target.value)}
-            aria-label={t('projects.sortLabel')}
-          >
-            <option value="updated">{t('projects.sort.updated')}</option>
-            <option value="stars">{t('projects.sort.stars')}</option>
-            <option value="name">{t('projects.sort.name')}</option>
-          </select>
+            onChange={updateFilter(setSort)}
+            label={t('projects.sortLabel')}
+            options={[
+              { value: 'updated', label: t('projects.sort.updated') },
+              { value: 'stars',   label: t('projects.sort.stars') },
+              { value: 'name',    label: t('projects.sort.name') },
+            ]}
+          />
         </Reveal>
 
         {loading && (

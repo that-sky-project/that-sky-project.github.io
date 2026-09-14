@@ -29,7 +29,7 @@ export default {
       '因对《光·遇》的共同热爱而相聚，我们把研究、实验和开源工具，做成整个社区真正用得上的东西。',
     viewProjects: '查看项目',
     join: '加入我们',
-    joinToast: '请通过我们的 GitHub 组织与我们联系。',
+    joinToast: '请通过我们的 GitHub 主页邮箱地址与我们联系。',
     scroll: '向下探索',
   },
   about: {
