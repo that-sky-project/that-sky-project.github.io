@@ -50,7 +50,11 @@ export function Manifesto() {
               <span className="index-label">{t('manifesto.kicker')}</span>
             </div>
             <h2>{t('manifesto.title')}</h2>
-            <p className="manifesto-belief">{t('manifesto.belief')}</p>
+            <div className="manifesto-belief-wrap">
+              <span className="quote-mark quote-open">“</span>
+              <p className="manifesto-belief">{t('manifesto.belief')}</p>
+              <span className="quote-mark quote-close">”</span>
+            </div>
           </Reveal>
         </div>
 
