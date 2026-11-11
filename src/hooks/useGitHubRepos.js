@@ -110,8 +110,9 @@ function fetchReposForOrg(org) {
 }
 
 export function useGitHubRepos(org) {
-  const [repos, setRepos] = useState(() => readReposCache(org)?.repos || [])
-  const [loading, setLoading] = useState(() => !readReposCache(org)?.repos?.length)
+  const [initialCache] = useState(() => readReposCache(org))
+  const [repos, setRepos] = useState(initialCache?.repos || [])
+  const [loading, setLoading] = useState(!initialCache?.repos?.length)
   const [error, setError] = useState(null)
 
   useEffect(() => {

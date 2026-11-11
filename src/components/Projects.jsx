@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
+import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from 'framer-motion'
 import { ArrowUpRight, ChevronDown, ChevronLeft, ChevronRight, GitFork, Search, Star } from 'lucide-react'
 import { useGitHubRepos } from '../hooks/useGitHubRepos'
 import { useT } from '../i18n'
-import { Reveal, RevealGroup, RevealItem } from './Reveal'
+import { Reveal } from './Reveal'
 
 const PAGE_SIZE = 7
+const EASE = [0.22, 0.61, 0.36, 1]
 const SORTERS = {
   updated: (a, b) => new Date(b.pushed_at) - new Date(a.pushed_at),
   stars: (a, b) => (b.stargazers_count || 0) - (a.stargazers_count || 0),
@@ -16,19 +17,9 @@ function SortSelect({ value, onChange, options, label }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
   const dropdownRef = useRef(null)
-  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 })
 
   useEffect(() => {
     if (!open) return
-
-    // 计算下拉框位置
-    if (ref.current) {
-      const rect = ref.current.getBoundingClientRect()
-      setDropdownPos({
-        top: rect.bottom + 6,
-        left: rect.right,
-      })
-    }
 
     function onOutside(e) {
       const isClickInTrigger = ref.current && ref.current.contains(e.target)
@@ -37,8 +28,15 @@ function SortSelect({ value, onChange, options, label }) {
         setOpen(false)
       }
     }
+    function onKeyDown(e) {
+      if (e.key === 'Escape') setOpen(false)
+    }
     document.addEventListener('mousedown', onOutside)
-    return () => document.removeEventListener('mousedown', onOutside)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', onOutside)
+      document.removeEventListener('keydown', onKeyDown)
+    }
   }, [open])
 
   const current = options.find(o => o.value === value)
@@ -55,39 +53,40 @@ function SortSelect({ value, onChange, options, label }) {
         {current?.label}
         <ChevronDown size={12} className={open ? 'sort-chevron open' : 'sort-chevron'} />
       </button>
-      {open && createPortal(
-        <div
-          ref={dropdownRef}
-          className="sort-dropdown"
-          role="listbox"
-          aria-label={label}
-          style={{
-            position: 'fixed',
-            top: `${dropdownPos.top}px`,
-            left: `${dropdownPos.left - 120}px`,
-          }}
-        >
-          {options.map(opt => (
-            <button
-              key={opt.value}
-              className={`sort-option${opt.value === value ? ' active' : ''}`}
-              role="option"
-              aria-selected={opt.value === value}
-              onClick={() => { onChange(opt.value); setOpen(false) }}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>,
-        document.body
-      )}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            ref={dropdownRef}
+            className="sort-dropdown"
+            role="listbox"
+            aria-label={label}
+            initial={{ opacity: 0, y: -6, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.97, transition: { duration: 0.16, ease: 'easeIn' } }}
+            transition={{ duration: 0.24, ease: EASE }}
+            style={{ transformOrigin: 'top right' }}
+          >
+            {options.map(opt => (
+              <button
+                key={opt.value}
+                className={`sort-option${opt.value === value ? ' active' : ''}`}
+                role="option"
+                aria-selected={opt.value === value}
+                onClick={() => { onChange(opt.value); setOpen(false) }}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
 
 function FeaturedProject({ repo, t }) {
   return (
-    <Reveal as="article" className="featured-project">
+    <article className="featured-project">
       <div className="featured-topline">
         <span>{t('projects.recentlyUpdated')}</span>
         <a href={repo.html_url} target="_blank" rel="noreferrer" aria-label={t('projects.openRepo', { name: repo.name })}>
@@ -103,13 +102,13 @@ function FeaturedProject({ repo, t }) {
         <span><Star size={13} /> {repo.stargazers_count || 0}</span>
         <span><GitFork size={13} /> {repo.forks_count || 0}</span>
       </div>
-    </Reveal>
+    </article>
   )
 }
 
 function ProjectRow({ repo, t }) {
   return (
-    <RevealItem as="article" className="project-row">
+    <article className="project-row">
       <div className="project-row-main">
         <span className="repo-language">{repo.language || t('projects.fallbackLanguage')}</span>
         <h3>{repo.name}</h3>
@@ -122,12 +121,13 @@ function ProjectRow({ repo, t }) {
       <a href={repo.html_url} target="_blank" rel="noreferrer" aria-label={t('projects.openRepo', { name: repo.name })}>
         <ArrowUpRight size={17} />
       </a>
-    </RevealItem>
+    </article>
   )
 }
 
 export default function Projects() {
   const t = useT()
+  const reduce = useReducedMotion()
   const { repos, loading, error } = useGitHubRepos('that-sky-project')
   const [query, setQuery] = useState('')
   const [language, setLanguage] = useState('All')
@@ -165,13 +165,16 @@ export default function Projects() {
       <div className="container">
         <div className="projects-header">
           <Reveal className="section-intro">
-            <p className="section-kicker">{t('projects.kicker')}</p>
-            <h2>{t('projects.titleLead')}<br />{t('projects.titleAccent')}</h2>
+            <div className="section-index">
+              <span className="index-num">04</span>
+              <span className="index-label">{t('projects.kicker')}</span>
+            </div>
+            <h2>{t('projects.titleLead')} {t('projects.titleAccent')}</h2>
           </Reveal>
           <Reveal as="p" delay={0.1}>{t('projects.intro')}</Reveal>
         </div>
 
-        <Reveal className="project-controls">
+        <Reveal className="project-controls" delay={0.05}>
           <label>
             <Search size={16} />
             <input
@@ -185,18 +188,27 @@ export default function Projects() {
               aria-label={t('projects.searchLabel')}
             />
           </label>
-          <div className="language-filter">
-            {languages.map(item => (
-              <button
-                className={language === item ? 'active' : ''}
-                onClick={() => updateFilter(setLanguage)(item)}
-                aria-pressed={language === item}
-                key={item}
-              >
-                {item === 'All' ? t('projects.filterAll') : item}
-              </button>
-            ))}
-          </div>
+          <LayoutGroup>
+            <div className="language-filter">
+              {languages.map(item => (
+                <button
+                  className={language === item ? 'active' : ''}
+                  onClick={() => updateFilter(setLanguage)(item)}
+                  aria-pressed={language === item}
+                  key={item}
+                >
+                  {item === 'All' ? t('projects.filterAll') : item}
+                  {language === item && (
+                    <motion.span
+                      layoutId="lang-underline"
+                      className="lang-underline"
+                      transition={{ type: 'spring', stiffness: 500, damping: 38 }}
+                    />
+                  )}
+                </button>
+              ))}
+            </div>
+          </LayoutGroup>
           <SortSelect
             value={sort}
             onChange={updateFilter(setSort)}
@@ -221,12 +233,25 @@ export default function Projects() {
         {!loading && !error && !visible.length && <div className="project-state">{t('projects.state.empty')}</div>}
 
         {featured && (
-          <div className="project-directory" key={`${language}-${sort}-${currentPage}`}>
-            <FeaturedProject repo={featured} t={t} />
-            <RevealGroup className="project-list">
-              {remaining.map(repo => <ProjectRow key={repo.id} repo={repo} t={t} />)}
-            </RevealGroup>
-          </div>
+          <Reveal className="project-directory" delay={0.05}>
+            {/* 翻页 / 筛选切换：整组快速淡入淡出，替代逐行重播的拖沓感 */}
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={`${language}-${sort}-${currentPage}`}
+                initial={reduce ? { opacity: 0 } : { opacity: 0, y: 16 }}
+                animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
+                exit={reduce ? { opacity: 0 } : { opacity: 0, y: -10 }}
+                transition={{ duration: 0.32, ease: EASE }}
+              >
+                <div className="project-directory-inner">
+                  <FeaturedProject repo={featured} t={t} />
+                  <div className="project-list">
+                    {remaining.map(repo => <ProjectRow key={repo.id} repo={repo} t={t} />)}
+                  </div>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </Reveal>
         )}
 
         {totalPages > 1 && (

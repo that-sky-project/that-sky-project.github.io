@@ -1,25 +1,26 @@
-import { useRef } from 'react'
-import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion'
 import { useT } from '../i18n'
 import { Reveal, RevealGroup, RevealItem } from './Reveal'
-
-const EASE = [0.22, 0.61, 0.36, 1]
 
 export function About() {
   const t = useT()
   return (
     <section id="about" className="about-section">
       <div className="container">
-        <Reveal className="section-intro">
-          <p className="section-kicker">{t('about.kicker')}</p>
-          <h2>{t('about.titleLead')} <span>{t('about.titleAccent')}</span></h2>
+        <Reveal className="section-index">
+          <span className="index-num">01</span>
+          <span className="index-label">{t('about.kicker')}</span>
+        </Reveal>
+
+        <Reveal as="p" className="about-lead" y={26}>
+          {t('about.lead')}
         </Reveal>
 
         <div className="about-body">
-          <Reveal as="p" className="about-lead">{t('about.lead')}</Reveal>
-          <Reveal className="about-detail" delay={0.1}>
-            <p>{t('about.detail')}</p>
-            <p className="about-signature">{t('about.signature')}</p>
+          <Reveal as="p" className="about-detail" delay={0.08}>
+            {t('about.detail')}
+          </Reveal>
+          <Reveal className="about-signature" delay={0.16}>
+            {t('about.signature')}
           </Reveal>
         </div>
       </div>
@@ -38,26 +39,26 @@ const MANIFESTO_LAYOUT = [
 
 export function Manifesto() {
   const t = useT()
-  const listRef = useRef(null)
-  const { scrollYProgress } = useScroll({ target: listRef, offset: ['start 80%', 'end 60%'] })
-  const lineScale = useTransform(scrollYProgress, [0, 1], [0, 1])
 
   return (
     <section id="manifesto" className="manifesto-section">
       <div className="container manifesto-inner">
         <div className="manifesto-heading">
-          <p className="section-kicker">{t('manifesto.kicker')}</p>
-          <h2>{t('manifesto.title')}</h2>
-          <span className="manifesto-quote-left">“</span>
-          <p className="manifesto-belief">{t('manifesto.belief')}</p>
-          <span className="manifesto-quote-right">“</span>
+          <Reveal>
+            <div className="section-index index-dark">
+              <span className="index-num">02</span>
+              <span className="index-label">{t('manifesto.kicker')}</span>
+            </div>
+            <h2>{t('manifesto.title')}</h2>
+            <p className="manifesto-belief">{t('manifesto.belief')}</p>
+          </Reveal>
         </div>
 
-        <RevealGroup className="manifesto-statements" ref={listRef}>
-          <motion.span className="manifesto-line" style={{ scaleY: lineScale }} aria-hidden="true" />
-          {MANIFESTO_LAYOUT.map(point => (
-            <RevealItem as="p" key={point.key} className={point.emphasis ? 'is-emphasis' : ''}>
-              {t(`manifesto.points.${point.key}`)}
+        <RevealGroup className="manifesto-statements">
+          {MANIFESTO_LAYOUT.map((point, index) => (
+            <RevealItem as="div" key={point.key} className={`manifesto-statement${point.emphasis ? ' is-emphasis' : ''}`}>
+              <span className="statement-index">{String(index + 1).padStart(2, '0')}</span>
+              <p>{t(`manifesto.points.${point.key}`)}</p>
             </RevealItem>
           ))}
           <span className="manifesto-signature">{t('manifesto.signature')}</span>
@@ -76,33 +77,29 @@ const PRINCIPLE_LAYOUT = [
 
 export function Philosophy() {
   const t = useT()
-  const reduce = useReducedMotion()
 
   return (
     <section id="philosophy" className="philosophy-section">
       <div className="container">
         <div className="philosophy-header">
           <Reveal className="section-intro">
-            <p className="section-kicker">{t('philosophy.kicker')}</p>
-            <h2>{t('philosophy.titleLead')}<br />{t('philosophy.titleAccent')}</h2>
+            <div className="section-index">
+              <span className="index-num">03</span>
+              <span className="index-label">{t('philosophy.kicker')}</span>
+            </div>
+            <h2>{t('philosophy.titleLead')} {t('philosophy.titleAccent')}</h2>
           </Reveal>
           <Reveal as="p" delay={0.1}>{t('philosophy.intro')}</Reveal>
         </div>
 
         <RevealGroup className="principles">
-          {PRINCIPLE_LAYOUT.map(principle => (
+          {PRINCIPLE_LAYOUT.map((principle, index) => (
             <RevealItem as="article" className={`principle principle-${principle.tone}`} key={principle.key}>
-              <motion.span
-                className="principle-mark"
-                aria-hidden="true"
-                initial={{ scaleX: reduce ? 1 : 0 }}
-                whileInView={{ scaleX: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, ease: EASE, delay: 0.1 }}
-                style={{ transformOrigin: 'left' }}
-              />
-              <h3>{t(`philosophy.principles.${principle.key}.title`)}</h3>
-              <p>{t(`philosophy.principles.${principle.key}.desc`)}</p>
+              <span className="principle-index">{String(index + 1).padStart(2, '0')}</span>
+              <div className="principle-body">
+                <h3>{t(`philosophy.principles.${principle.key}.title`)}</h3>
+                <p>{t(`philosophy.principles.${principle.key}.desc`)}</p>
+              </div>
             </RevealItem>
           ))}
         </RevealGroup>

@@ -18,10 +18,10 @@ export default function App() {
       <AnimatePresence mode="wait">
         <motion.main
           key={locale}
-          initial={reduce ? { opacity: 0 } : { opacity: 0, y: 6 }}
+          initial={reduce ? { opacity: 0 } : { opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.22 }}
+          transition={{ duration: 0.32, ease: [0.32, 0.72, 0, 1] }}
         >
           <Hero />
           <About />

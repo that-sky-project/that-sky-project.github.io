@@ -8,13 +8,14 @@ function ToastCard({ item }) {
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 12, scale: 0.98 }}
+      initial={{ opacity: 0, y: 16, scale: 0.96 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 10, scale: 0.98 }}
+      exit={{ opacity: 0, y: 8, scale: 0.97, transition: { duration: 0.18, ease: 'easeIn' } }}
       transition={{
         layout: { duration: 0.3, ease: [0.16, 1, 0.3, 1] },
-        duration: appearance.surfaceFadeDuration,
-        ease: [0.16, 1, 0.3, 1],
+        type: 'spring',
+        stiffness: 380,
+        damping: 30,
       }}
       onClick={() => toast.dismiss(item.id)}
       className="group relative mb-3 w-fit max-w-full cursor-pointer overflow-hidden shadow-[0_14px_36px_rgba(0,0,0,0.14)]"
@@ -93,7 +94,11 @@ export default function ToastViewport() {
   const items = useToastItems()
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-6 z-[80] flex justify-center px-4">
+    <div
+      className="pointer-events-none fixed inset-x-0 bottom-6 z-[80] flex justify-center px-4"
+      role="status"
+      aria-live="polite"
+    >
       <div className="pointer-events-auto flex w-full max-w-2xl flex-col items-center">
         <AnimatePresence initial={false}>
           {items.map(item => (

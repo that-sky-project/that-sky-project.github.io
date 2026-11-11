@@ -56,7 +56,12 @@ export default function Navbar() {
 
   return (
     <>
-      <header className={`site-nav ${scrolled ? 'is-scrolled' : ''}`}>
+      <motion.header
+        className={`site-nav ${scrolled ? 'is-scrolled' : ''}`}
+        initial={{ y: -74, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.8, ease: [0.22, 0.61, 0.36, 1], delay: 0.1 }}
+      >
         <div className="container nav-inner">
           <a href="#top" className="brand" aria-label={t('nav.home')}>
             <span className="brand-symbol">✦</span>
@@ -78,7 +83,7 @@ export default function Navbar() {
           </nav>
         </div>
         <motion.span className="nav-progress" style={{ scaleX: progress }} aria-hidden="true" />
-      </header>
+      </motion.header>
 
       <aside className="section-sidebar" aria-label={t('nav.sectionsLabel')}>
         <span className="sidebar-caption">{t('nav.explore')}</span>

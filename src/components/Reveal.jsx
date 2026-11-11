@@ -12,7 +12,7 @@ export function Reveal({ as = 'div', children, className, delay = 0, y = 22, ...
       initial={reduce ? { opacity: 0 } : { opacity: 0, y }}
       whileInView={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
       viewport={VIEWPORT}
-      transition={{ duration: 0.7, ease: EASE, delay }}
+      transition={{ duration: 0.85, ease: EASE, delay }}
       {...rest}
     >
       {children}
@@ -45,7 +45,7 @@ export function RevealItem({ as = 'div', children, className, y = 20, ...rest })
       className={className}
       variants={{
         hidden: reduce ? { opacity: 0 } : { opacity: 0, y },
-        show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: EASE } },
+        show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: EASE } },
       }}
       {...rest}
     >
